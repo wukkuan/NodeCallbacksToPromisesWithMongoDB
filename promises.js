@@ -28,12 +28,9 @@ Q.ninvoke(MongoClient, 'connect', 'mongodb://127.0.0.1:27017/test')
   // fulfilled. We'll take the values array and pull out the values we need to
   // continue.
   //
-  // This can be made simpler by using the `spread` rather than `then`.
-  .then(function(values) {
-    var db = values[0];
-    var collection = values[1];
-    var docs = values[2];
-
+  // This is the equivalent of
+  // `.then(function(values) { var db=values[0], ...`.
+  .spread(function(db, collection, docs) {
     collection.count(function(err, count) {
       console.log(format("count = %s", count));
     });
