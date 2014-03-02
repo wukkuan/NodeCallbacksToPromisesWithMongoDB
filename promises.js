@@ -31,16 +31,22 @@ Q.ninvoke(MongoClient, 'connect', 'mongodb://127.0.0.1:27017/test')
   // This is the equivalent of
   // `.then(function(values) { var db=values[0], ...`.
   .spread(function(db, collection, docs) {
-    collection.count(function(err, count) {
-      console.log(format("count = %s", count));
-    });
+    // The two async methods called here are pretty straightforward. Making
+    // these promises doesn't simplify the code, but it does keep it
+    // consistent. I'd probably just leave the callbacks in normal practice.
+
+    Q.ninvoke(collection, 'count')
+      .then(function(count) {
+        console.log(format("count = %s", count));
+      });
 
     // Locate all the entries using find
-    collection.find().toArray(function(err, results) {
-      console.dir(results);
-      // Let's close the db
-      db.close();
-    });
+    Q.ninvoke(collection.find(), 'toArray')
+      .then(function(results) {
+        console.dir(results);
+        // Let's close the db
+        db.close();
+      });
   })
   // This will catch any error that occurs inside of this promise. Because
   // Promises/A+ errors bubble, any error occuring inside of this promise
