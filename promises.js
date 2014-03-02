@@ -29,8 +29,7 @@ Q.ninvoke(MongoClient, 'connect', 'mongodb://127.0.0.1:27017/test')
   // handler to the outer `then` is important because a separate `then` will
   // also catch any errors that happen in the body of the previous `then`.
   //
-  // Equivalent to using `.catch(function(err) {...})`. Normally I'd use catch,
-  // but I wanted to be explicit here about what I was doing.
-  .then(null, function(err) {
+  // Equivalent to using `.then(null, function(err) {...})`.
+  .catch(function(err) {
     console.log('error: ', err);
   });
