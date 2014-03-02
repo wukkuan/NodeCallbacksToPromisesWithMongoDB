@@ -6,18 +6,43 @@ var MongoClient = require('mongodb').MongoClient
 Q.ninvoke(MongoClient, 'connect', 'mongodb://127.0.0.1:27017/test')
   .then(function(db) {
     var collection = db.collection('test_insert');
-    collection.insert({a:2}, function(err, docs) {
+    // We need to execute `collection.insert({a:2})` and have the callback
+    // wrapped in a promise. However, there is a caveat this time.
+    //
+    // Because we'll need the db and collection values in async calls that
+    // happen after this one, we need a way to pass these values on to the
+    // next promise. `Q.all` is my preferred way of doing this.
+    //
+    // `Q.all` takes an array of values and promises and returns a promise that
+    // will be fulfilled when all promises in the array are fulfilled. The
+    // value fulfilled will be the array containing all of the values and the
+    // fulfilled values of the promises. The order of the return value will not
+    // change.
+    return Q.all([
+      db,
+      collection,
+      Q.ninvoke(collection, 'insert', {a:2})
+    ]);
+  })
+  // After the value has been inserted into Mongo, this promise will be
+  // fulfilled. We'll take the values array and pull out the values we need to
+  // continue.
+  //
+  // This can be made simpler by using the `spread` rather than `then`.
+  .then(function(values) {
+    var db = values[0];
+    var collection = values[1];
+    var docs = values[2];
 
-      collection.count(function(err, count) {
-        console.log(format("count = %s", count));
-      });
+    collection.count(function(err, count) {
+      console.log(format("count = %s", count));
+    });
 
-      // Locate all the entries using find
-      collection.find().toArray(function(err, results) {
-        console.dir(results);
-        // Let's close the db
-        db.close();
-      });
+    // Locate all the entries using find
+    collection.find().toArray(function(err, results) {
+      console.dir(results);
+      // Let's close the db
+      db.close();
     });
   })
   // This will catch any error that occurs inside of this promise. Because
