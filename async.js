@@ -1,21 +1,45 @@
 var MongoClient = require('mongodb').MongoClient
-  , format = require('util').format;
+  , format = require('util').format
+  , async = require('async');
 
-MongoClient.connect('mongodb://127.0.0.1:27017/test', function(err, db) {
-  if(err) throw err;
+var db, collection, docs;
 
-  var collection = db.collection('test_insert');
-  collection.insert({a:2}, function(err, docs) {
-
-    collection.count(function(err, count) {
-      console.log(format("count = %s", count));
+async.series([
+  function(done) {
+    MongoClient.connect('mongodb://127.0.0.1:27017/test', function(err, testdb) {
+      if(err) return done(err);
+      db = testdb;
+      collection = db.collection('test_insert');
+      done(null, collection);
     });
-
-    // Locate all the entries using find
-    collection.find().toArray(function(err, results) {
-      console.dir(results);
-      // Let's close the db
-      db.close();
+  },
+  function(done) {
+    collection.insert({a:2}, function(err, docs) {
+      if (err) done(err);
+      done(null, docs);
     });
-  });
-});
+  }],
+  function(err) {
+    async.parallel([
+      function(done) {
+        collection.count(function(err, count) {
+          if (err) return done(err);
+          console.log(format("count = %s", count));
+          done();
+        });
+      },
+      function(done) {
+        // Locate all the entries using find
+        collection.find().toArray(function(err, results) {
+          if (err) return done(err);
+          console.dir(results);
+          done();
+        });
+      }],
+      function(err, results) {
+        // Let's close the db
+        db.close();
+      }
+    );
+  }
+);
